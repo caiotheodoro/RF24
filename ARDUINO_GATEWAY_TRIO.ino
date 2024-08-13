@@ -4,7 +4,7 @@
 
 #define CE_PIN 7
 #define CSN_PIN 8
-#define SERVICE_KEY 123123123  
+#define SERVICE_KEY 123123123
 
 RF24 radio(CE_PIN, CSN_PIN);
 
@@ -85,21 +85,16 @@ void loop() {
     String type = receivedString.substring(0, firstColon);
     String login = receivedString.substring(firstColon + 1, secondColon);
     String password = receivedString.substring(secondColon + 1);
-    
-    char response[32] = {0};
 
     if (type == "register") {
       int startAddress = findLoginInEEPROM(login);
-      if (startAddress != -1) {
-        strcpy(response, "register_failed");
-        Serial.println(F("Registration failed. Login already taken."));
-      } else {
+      if (startAddress == -1) {
         String encryptedPassword = encryptPassword(password);
-        startAddress = EEPROM.length();  
+        startAddress = EEPROM.length();
         writeStringToEEPROM(startAddress, login + ":" + encryptedPassword);
-
-        strcpy(response, "register_success");
         Serial.println(F("Registration successful and data saved to EEPROM."));
+      } else {
+        Serial.println(F("Registration failed. Login already taken."));
       }
     } else if (type == "login") {
       int startAddress = findLoginInEEPROM(login);
@@ -110,24 +105,14 @@ void loop() {
         String decryptedStoredPassword = encryptPassword(storedEncryptedPassword);
 
         if (password == decryptedStoredPassword) {
-          strcpy(response, "login_success");
           Serial.println(F("Login successful."));
         } else {
-          strcpy(response, "login_failed");
           Serial.println(F("Login failed. Incorrect password."));
         }
       } else {
-        strcpy(response, "login_failed");
         Serial.println(F("Login failed. Login not found."));
       }
     }
-
-    // Send response back
-    radio.stopListening();  
-    radio.flush_rx();  
-    radio.flush_tx();  
-    radio.write(&response, sizeof(response)); 
-    radio.startListening();  
   }
 
   delay(100);

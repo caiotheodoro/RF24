@@ -22,7 +22,6 @@ void setup() {
   radio.setPALevel(RF24_PA_LOW);
 
   radio.openWritingPipe(address);
-  radio.openReadingPipe(1, address);
 
   radio.stopListening();
 }
@@ -49,33 +48,6 @@ void loop() {
   if (report) {
     Serial.println(F("Registration request sent successfully!"));
     Serial.println(payload);
-
-    radio.startListening();
-
-    unsigned long startedWaitingAt = millis();
-    bool timeout = false;
-    while (!radio.available()) {
-      if (millis() - startedWaitingAt > 3000) {  
-        timeout = true;
-        break;
-      }
-    }
-
-    if (timeout) {
-      Serial.println(F("Response timeout."));
-    } else {
-      char response[32] = {0};
-      radio.read(&response, sizeof(response));
-
-      if (String(response) == "register_success") {
-        Serial.println(F("Registration successful!"));
-      } else if (String(response) == "register_failed") {
-        Serial.println(F("Registration failed. Login already taken."));
-      }
-    }
-
-    radio.flush_rx();
-    radio.stopListening();
   } else {
     Serial.println(F("Registration request failed or timed out"));
   }
