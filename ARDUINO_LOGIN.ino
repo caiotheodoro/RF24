@@ -6,18 +6,23 @@
 
 RF24 radio(CE_PIN, CSN_PIN);
 
-uint8_t address[] = "00001";  
+uint8_t address[] = "00001";
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
-  while (!Serial) {}
-
-  if (!radio.begin()) {
-    Serial.println(F("radio hardware is not responding!!"));
-    while (1) {}
+  while (!Serial)
+  {
   }
 
-  Serial.println(F("RF24 Login Arduino"));
+  if (!radio.begin())
+  {
+    while (1)
+    {
+    }
+  }
+
+  Serial.println(F("Arduino de Login"));
 
   radio.setPALevel(RF24_PA_LOW);
 
@@ -26,14 +31,19 @@ void setup() {
   radio.stopListening();
 }
 
-void loop() {
-  Serial.println(F("Enter login for authentication: "));
-  while (!Serial.available()) {}
+void loop()
+{
+  Serial.println(F("Digite o login: "));
+  while (!Serial.available())
+  {
+  }
   String login = Serial.readStringUntil('\n');
   login.trim();
 
-  Serial.println(F("Enter password for authentication: "));
-  while (!Serial.available()) {}
+  Serial.println(F("Digite a senha: "));
+  while (!Serial.available())
+  {
+  }
   String password = Serial.readStringUntil('\n');
   password.trim();
 
@@ -45,11 +55,14 @@ void loop() {
   radio.flush_tx();
   bool report = radio.write(&payloadArray, sizeof(payloadArray));
 
-  if (report) {
-    Serial.println(F("Login request sent successfully!"));
+  if (report)
+  {
+    Serial.println(F("Solicitação de login enviada com sucesso!"));
     Serial.println(payload);
-  } else {
-    Serial.println(F("Login request failed or timed out"));
+  }
+  else
+  {
+    Serial.println(F("Falha ao enviar solicitação de login."));
   }
 
   delay(1000);
