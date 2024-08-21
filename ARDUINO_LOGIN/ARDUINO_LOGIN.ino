@@ -27,10 +27,54 @@ void setup()
   radio.setPALevel(RF24_PA_LOW);
 
   radio.openWritingPipe(address);
+  radio.openReadingPipe(1, address);  // Open a reading pipe to receive ACK
 
-  radio.setAutoAck(false)
+  radio.setAutoAck(false);
 
   radio.stopListening();
+}
+
+bool sendPacket(byte *pacote, int tamanho, int destino, int controle)
+{
+  while (1)
+  {
+    radio.startListening();
+    delayMicroseconds(70);
+    radio.stopListening();
+    if (!radio.testCarrier())
+    {
+      radio.write(pacote, tamanho);
+      return true;
+    }
+    else
+    {
+      Serial.println("Colisao detectada");
+      delayMicroseconds(270);
+    }
+    radio.flush_rx();
+  }
+}
+
+bool aguardaMsg(int tipo)
+{
+  radio.startListening();
+  unsigned long tempoInicio = millis();
+  while (millis() - tempoInicio < 500)
+  {
+    if (radio.available())
+    {
+      char receivedPayload[32] = {0};
+      radio.read(&receivedPayload, sizeof(receivedPayload));
+      String receivedString = String(receivedPayload);
+      int firstColon = receivedString.indexOf(':');
+      String type = receivedString.substring(0, firstColon);
+      if (type.toInt() == tipo)
+      {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void loop()
@@ -55,12 +99,32 @@ void loop()
   payload.toCharArray(payloadArray, 32);
 
   radio.flush_tx();
-  bool report = radio.write(&payloadArray, sizeof(payloadArray));
+  
+  bool report = sendPacket((byte *)payloadArray, sizeof(payloadArray), payloadArray[0], MSG);
 
   if (report)
   {
     Serial.println(F("Solicitação de login enviada com sucesso!"));
     Serial.println(payload);
+
+    radio.startListening();
+    report = aguardaMsg(CTS);
+    if (report)
+    {
+      report = sendPacket((byte *)payloadArray, sizeof(payloadArray), payloadArray[0], ACK);
+      if (report)
+      {
+        Serial.println(F("ACK enviado ao gateway"));
+      }
+      else
+      {
+        Serial.println(F("Falha ao enviar ACK ao gateway"));
+      }
+    }
+    else
+    {
+      Serial.println(F("Nenhum CTS recebido: Falha na comunicação com o gateway."));
+    }
   }
   else
   {

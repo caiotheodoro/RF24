@@ -11,6 +11,11 @@
 #define CSN_PIN 8
 #define SERVICE_KEY 123123123
 
+#define MSG 0
+#define ACK 1
+#define RTS 2
+#define CTS 3
+
 RF24 radio(CE_PIN, CSN_PIN);
 
 uint8_t address[] = "00001X1X1X1X1";
@@ -85,12 +90,50 @@ void setup()
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_2MBPS);
   radio.openReadingPipe(1, address);//colocar todos ndoes no mesmo pipe
+  radio.openWritingPipe(address);
 
   radio.startListening();
 
   radio.setAutoAck(false)
 }
 
+
+
+bool aguardaMsg(int tipo){
+    radio.startListening();
+    unsigned long tempoInicio = millis();
+    while(millis()-tempoInicio<500){
+      if (radio.available()) {    
+        char receivedPayload[32] = {0};
+        radio.read(&receivedPayload, sizeof(receivedPayload));
+        String receivedString = String(receivedPayload);
+        int firstColon = receivedString.indexOf(':');
+        int secondColon = receivedString.indexOf(':', firstColon + 1);
+        String type = receivedString.substring(0, firstColon);
+        if(type==tipo){
+          return true;
+        }
+      }
+    }
+    return false;
+}
+
+bool sendPacket(byte *pacote, int tamanho, int destino, int controle){
+  while(1){
+      radio.startListening();
+       delayMicroseconds(70);
+       radio.stopListening();
+       if (!radio.testCarrier()) {
+          radio.write(pacote, tamanho);
+          return true;
+       }
+       else {
+          Serial.println("Colisao detectada");
+          delayMicroseconds(270);
+       }
+        radio.flush_rx();
+  }
+}
 void loop()
 {
   radio.startListening();
@@ -106,10 +149,12 @@ void loop()
     String receivedString = String(receivedPayload);
     int firstColon = receivedString.indexOf(':');
     int secondColon = receivedString.indexOf(':', firstColon + 1);
+    int thirdColon = receivedString.indexOf(':', secondColon + 1);
 
     String type = receivedString.substring(0, firstColon);
     String login = receivedString.substring(firstColon + 1, secondColon);
     String password = receivedString.substring(secondColon + 1);
+    String ctsOrRts = receivedString.substring(thirdColon + 1);
 
     if (type == "register")
     {
@@ -120,10 +165,16 @@ void loop()
         startAddress = EEPROM.length();
         writeStringToEEPROM(startAddress, login + ":" + maskPassword);
         Serial.println(F("Registro feito com sucesso! salvo em EEPROM."));
+
+        bool report = sendPacket((byte *)"ACK:1", 6, 0, ACK);
       }
       else
       {
         Serial.println(F("Falhou. Login já utilizado."));
+
+        bool report = sendPacket((byte *)"ACK:0", 6, 0, ACK);
+
+        
       }
     }
     else if (type == "login")
@@ -140,15 +191,21 @@ void loop()
         {
           Serial.println(F("Login realizado com sucesso"));
 
+          bool report = sendPacket((byte *)"ACK:1", 6, 0, ACK);
+
         }
         else
         {
           Serial.println(F("Falha ao fazer Login. Senha incorreta."));
+
+          bool report = sendPacket((byte *)"ACK:0", 6, 0, ACK);
         }
       }
       else
       {
         Serial.println(F("Falha ao fazer Login. Usuário não encontrado."));
+
+        bool report = sendPacket((byte *)"ACK:2", 6, 0, ACK);
       }
     }
   }
