@@ -2,13 +2,18 @@
 #include <EEPROM.h>
 #include "RF24.h"
 
+//desabilitar o auto ack,   
+// /login, registro e gateway mesmo endereco
+//base para protocolo 
+//https://github.com/phsabo/OPTATIVA/blob/main/coordenado_aula.ino
+
 #define CE_PIN 7
 #define CSN_PIN 8
 #define SERVICE_KEY 123123123
 
 RF24 radio(CE_PIN, CSN_PIN);
 
-uint8_t address[][6] = {"00001", "00002", "00003"};
+uint8_t address[] = "00001X1X1X1X1";
 
 String maskPass(String password)
 {
@@ -76,19 +81,23 @@ void setup()
   }
 
   Serial.println(F("Gateway - Ouvindo solicitações de registro e login"));
-
-  radio.setPALevel(RF24_PA_LOW);
-
-  radio.openReadingPipe(1, address[0]);
+  radio.setChannel(15);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_2MBPS);
+  radio.openReadingPipe(1, address);//colocar todos ndoes no mesmo pipe
 
   radio.startListening();
+
+  radio.setAutoAck(false)
 }
 
 void loop()
 {
+  radio.startListening();
   if (radio.available())
   {
     char receivedPayload[32] = {0};
+    
     radio.read(&receivedPayload, sizeof(receivedPayload));
 
     Serial.print(F("Payload recebido: "));
@@ -130,6 +139,7 @@ void loop()
         if (password == decryptedStoredPassword)
         {
           Serial.println(F("Login realizado com sucesso"));
+
         }
         else
         {
