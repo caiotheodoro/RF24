@@ -94,7 +94,7 @@ void setup()
 
   radio.startListening();
 
-  radio.setAutoAck(false)
+  radio.setAutoAck(false);
 }
 
 
@@ -118,17 +118,17 @@ bool aguardaMsg(int tipo){
     return false;
 }
 
-bool sendPacket(byte *pacote, int tamanho, int destino, int controle){
+bool sendPacket(byte *pacote, int tamanho){
   while(1){
       radio.startListening();
        delayMicroseconds(70);
        radio.stopListening();
        if (!radio.testCarrier()) {
-          radio.write(pacote, tamanho);
-          return true;
+          Serial.println("Write Success");
+          return radio.write(&pacote[0], tamanho);
        }
        else {
-          Serial.println("Colisao detectada");
+          Serial.println("Meio ocupado");
           delayMicroseconds(270);
        }
         radio.flush_rx();
@@ -141,8 +141,8 @@ void loop()
   {
     char receivedPayload[32] = {0};
     
+    Serial.print(F("Payload recebido"));
     radio.read(&receivedPayload, sizeof(receivedPayload));
-
     Serial.print(F("Payload recebido: "));
     Serial.println(receivedPayload);
 
@@ -166,13 +166,13 @@ void loop()
         writeStringToEEPROM(startAddress, login + ":" + maskPassword);
         Serial.println(F("Registro feito com sucesso! salvo em EEPROM."));
 
-        bool report = sendPacket((byte *)"ACK:1", 6, 0, ACK);
+        bool report = sendPacket((byte *)(ACK + ":1"), 6);
       }
       else
       {
         Serial.println(F("Falhou. Login já utilizado."));
 
-        bool report = sendPacket((byte *)"ACK:0", 6, 0, ACK);
+        bool report = sendPacket((byte *)(ACK + ":0"), 6);
 
         
       }
@@ -191,21 +191,21 @@ void loop()
         {
           Serial.println(F("Login realizado com sucesso"));
 
-          bool report = sendPacket((byte *)"ACK:1", 6, 0, ACK);
+          bool report = sendPacket((byte *)(ACK+":1"), 6);
 
         }
         else
         {
           Serial.println(F("Falha ao fazer Login. Senha incorreta."));
 
-          bool report = sendPacket((byte *)"ACK:0", 6, 0, ACK);
+          bool report = sendPacket((byte *)(ACK+":0"), 6);
         }
       }
       else
       {
         Serial.println(F("Falha ao fazer Login. Usuário não encontrado."));
 
-        bool report = sendPacket((byte *)"ACK:2", 6, 0, ACK);
+        bool report = sendPacket((byte *)(ACK+":2"), 6);
       }
     }
   }

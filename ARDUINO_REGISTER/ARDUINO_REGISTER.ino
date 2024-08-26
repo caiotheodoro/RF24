@@ -4,6 +4,12 @@
 #define CE_PIN 7
 #define CSN_PIN 8
 
+#define MSG 0
+#define ACK 1
+#define RTS 2
+#define CTS 3
+
+
 RF24 radio(CE_PIN, CSN_PIN);
 
 uint8_t address[] = "00001X1X1X1X1";
@@ -25,14 +31,15 @@ void setup()
   Serial.println(F("Arduino de Registro"));
   
 
-  radio.setPALevel(RF24_PA_LOW);
-
+  radio.setChannel(15);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_2MBPS);
+  
   radio.openWritingPipe(address);
   radio.openReadingPipe(1, address);  // Open a reading pipe to receive ACK
 
   radio.setAutoAck(false);
 
-  radio.stopListening();
 }
 
 bool sendPacket(byte *pacote, int tamanho, int destino, int controle)
@@ -111,7 +118,7 @@ void loop()
 
     // Start listening for a CTS message from the gateway
     radio.startListening();
-    report = aguardaMsg(CTS);
+    report = aguardaMsg(ACK);
     if (report)
     {
       // If CTS received, send ACK back to the gateway

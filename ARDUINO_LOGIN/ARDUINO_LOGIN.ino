@@ -4,6 +4,12 @@
 #define CE_PIN 7
 #define CSN_PIN 8
 
+#define MSG 0
+#define ACK 1
+#define RTS 2
+#define CTS 3
+
+
 RF24 radio(CE_PIN, CSN_PIN);
 
 uint8_t address[] = "00001X1X1X1X1";
@@ -24,7 +30,9 @@ void setup()
 
   Serial.println(F("Arduino de Login"));
 
-  radio.setPALevel(RF24_PA_LOW);
+  radio.setChannel(15);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_2MBPS);
 
   radio.openWritingPipe(address);
   radio.openReadingPipe(1, address);  // Open a reading pipe to receive ACK
@@ -108,7 +116,7 @@ void loop()
     Serial.println(payload);
 
     radio.startListening();
-    report = aguardaMsg(CTS);
+    report = aguardaMsg(ACK);
     if (report)
     {
       report = sendPacket((byte *)payloadArray, sizeof(payloadArray), payloadArray[0], ACK);
