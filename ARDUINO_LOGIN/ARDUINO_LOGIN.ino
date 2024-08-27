@@ -28,9 +28,8 @@ void setup()
     }
   }
 
-  Serial.println(F("Arduino de Login"));
 
-  radio.setChannel(15);
+  radio.setChannel(72);
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_2MBPS);
 
@@ -56,7 +55,6 @@ bool sendPacket(byte *pacote, int tamanho, int destino, int controle)
     }
     else
     {
-      Serial.println("Colisao detectada");
       delayMicroseconds(270);
     }
     radio.flush_rx();
@@ -112,7 +110,6 @@ void loop()
 
   if (report)
   {
-    Serial.println(F("Solicitação de login enviada com sucesso!"));
     Serial.println(payload);
 
     radio.startListening();
