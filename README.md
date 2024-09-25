@@ -38,7 +38,7 @@
 
 1. **Clone the repository**:
     ```sh
-    git clone https://github.com/yourusername/arduino-serial-microservices.git
+    git clone https://github.com/caiotheodoro/arduino-serial-microservices.git
     cd arduino-serial-microservices
     ```
 
